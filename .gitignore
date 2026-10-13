@@ -1,0 +1,26 @@
+# Data, weights and outputs live in /l/users/mohamed.abdalla/medai/
+data/
+outputs/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.npz
+*.zip
+*.tar*
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png
+__pycache__/
+*.egg-info/
+.venv/
+.env
+*.log
+# LaTeX build files
+*.aux
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls

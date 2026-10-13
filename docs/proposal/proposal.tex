@@ -1,0 +1,124 @@
+% ENG2440 Capstone, Fall 2026. Week 4 one-page proposal.
+% Compile with: pdflatex proposal.tex
+
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.7in]{geometry}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\hypersetup{
+  pdftitle={What photometric clipping costs cross-centre polyp segmentation},
+  pdfauthor={Mohamed Abdalla, Brandon Adebayo, Mohamed Farrag}
+}
+
+\titleformat{\section}[runin]{\normalfont\bfseries}{}{0pt}{}[.]
+\titlespacing*{\section}{0pt}{5pt}{5pt}
+\setlength{\parskip}{2pt}
+\setlength{\parindent}{0pt}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries What photometric clipping costs cross-centre polyp segmentation}\\[4pt]
+  Mohamed Abdalla, Brandon Adebayo, Mohamed Farrag\\[1pt]
+  {\small ENG2440 Capstone, Fall 2026. Week 4 proposal.}
+\end{center}
+
+\section{Clinical problem and intended use}
+
+Colonoscopy is the reference examination for finding and removing precancerous polyps, and a polyp
+missed during withdrawal cannot be removed. The intended use is a real-time overlay that marks
+candidate polyp regions so the endoscopist can decide whether to look again; it makes no diagnosis.
+Such models lose accuracy at unseen hospitals. In the EndoCV2021 challenge, the strongest team's Dice
+fell from 0.878 on video from its training centres to 0.737 on video from a new centre~[1].
+
+We focus on one cause with a clear physical basis. A clipped pixel records the maximum value instead
+of the tissue behind it, and no later adjustment can recover it, whereas a dark pixel keeps a noisier
+but still ordered relation to the scene. On Kvasir-SEG, nnU-Net v2 kept its Dice of 0.884 under
+simulated low light but fell to 0.823 under strong overexposure~[2], although that study used a single dataset and nnU-Net's default per-image normalisation, which largely cancels uniform darkening. We ask what
+clipping costs at an unseen centre, and whether enhanced views that exchange information only where
+it helps reduce that cost.
+
+\section{AI task}
+
+Binary segmentation of polyps in colonoscopy frames, scored per frame and per lesion. The model passes
+the original frame and two enhanced views (CLAHE and gamma) through separate encoders and fuses their features. During training, a learned gate decides region by region whether one branch
+should teach another, in either direction, or not at all. The gate follows Zhu et al.~[3], so the
+mechanism is not our contribution; we test whether selective teaching helps on an unseen centre,
+especially in clipped regions, where no view carries signal.
+
+\section{Dataset}
+
+PolypGen~[4] has 3762 annotated positive frames and 4275 negative frames from six hospitals (CC BY 4.0, free on Synapse). EAD2019~[5] has expert saturation and specularity masks but
+no polyp masks, so it only checks our clipping detector. Kvasir-SEG~[6] allows comparison
+with published work. All are public and de-identified.
+
+PolypGen releases no patient identifiers, so we split by centre. Following its data descriptor, we
+train on four of C1 to C5, select models on the fifth, and test once on C6 (Alexandria, Egypt) after
+every choice is frozen. Scores on seen centres are frame-level and therefore optimistic.
+
+\section{Baseline}
+
+Polyp-PVT~[7], a PVTv2-B2 encoder with its published decoder and PraNet's weighted cross-entropy and
+IoU loss~[8]. Its released code uses no photometric augmentation, so we also train it with BigAug's
+image-quality and appearance transforms~[9]; this augmented model is the one to beat. The controls
+add one ingredient at a time at matched size and compute: branches averaged without distillation,
+distillation without a gate, a random gate, and a fixed confidence threshold.
+
+\section{Primary metrics}
+
+We report Dice and IoU for overlap, normalised surface distance for boundaries, and per-lesion
+sensitivity at a matched rate of false positives per frame. Calibration is measured with expected
+calibration error near the lesion, since background pixels make whole-image values look small, and
+temperature scaling fitted on the validation centre is the mitigation we test. Confidence intervals
+come from a bootstrap over video sequences, with three seeds for final comparisons.
+
+\section{Expected technical challenge}
+
+Statistical power. C6 has 520 polyp frames, but 432 of them are consecutive frames from a small number of videos, which leaves at most about 100 independent units. Detecting a two-point
+Dice difference would need about 200, so we fix the primary comparison now (Dice on C6, full method
+against the augmented baseline) and report confidence intervals rather than significance tests.
+
+\section{Expected clinical and validation risk}
+
+Clipping may turn out to cost little. Before building the gate, we test this in week 6 on the
+validation centre, by brightening frames with and without clipping and by comparing Dice across
+lesions with different amounts of clipping. If the effect is small, or the branches make the same
+mistakes, we will report that and study when enhancement hurts transfer instead. Clinically, a model
+that learns to ignore glare could miss polyps partly hidden by reflections, so we report sensitivity
+on those lesions separately.
+
+\section{Roles and use of AI tools}
+
+Mohamed Abdalla handles data and evaluation, Brandon Adebayo the model and gate, and Mohamed Farrag
+the experiments and robustness analysis. In week 13 each member runs the full pipeline so everyone
+can defend it at the viva. We used large language models for literature search and drafting, and will use them for code scaffolding. Every use is logged, and every citation and number was checked against its source.
+
+\vspace{4pt}
+{\footnotesize\sloppy
+\noindent\textbf{References.}
+[1]~S. Ali et al. Assessing generalisability of deep learning-based polyp detection and segmentation
+methods through a computer vision challenge. \emph{Sci. Rep.} 14:2032, 2024.
+[2]~Y. Bai, H. Liu. Stage-aware Swin-enhanced nnU-Net v2 for robust polyp segmentation in
+collaborative endoscopic visual sensing. \emph{Sensors} 26(16):5206, 2026.
+[3]~J. Zhu et al. A good student is cooperative and reliable: CNN-Transformer collaborative learning
+for semantic segmentation. \emph{ICCV}, 2023.
+[4]~S. Ali et al. A multi-centre polyp detection and segmentation dataset for generalisability
+assessment. \emph{Sci. Data} 10:75, 2023.
+[5]~S. Ali et al. An objective comparison of detection and segmentation algorithms for artefacts in
+clinical endoscopy. \emph{Sci. Rep.} 10:2748, 2020.
+[6]~D. Jha et al. Kvasir-SEG: a segmented polyp dataset. \emph{MMM}, 2020.
+[7]~B. Dong et al. Polyp-PVT: polyp segmentation with pyramid vision transformers.
+\emph{CAAI Artif. Intell. Res.} 2:9150015, 2023.
+[8]~D.-P. Fan et al. PraNet: parallel reverse attention network for polyp segmentation.
+\emph{MICCAI}, 2020.
+[9]~L. Zhang et al. Generalizing deep learning for medical image segmentation to unseen domains via
+deep stacked transformation. \emph{IEEE Trans. Med. Imaging} 39(7), 2020.\par}
+
+\end{document}
