@@ -1,10 +1,12 @@
 """Our one evaluation: Dice and IoU per frame (masks binarised at 0.5), mean over frames.
 
-Score one run, and with --save append its row to docs/results.xlsx:
-    PYTHONPATH=src python -m medai.evaluate configs/<run>.yaml --save
+Score one run, and with --save add its row to the "runs" sheet of docs/results.xlsx:
+    PYTHONPATH=src python -m medai.evaluate configs/<run>.yaml --save --logs <slurm log> ...
+GPU type, date and train time come from the Slurm logs; --date and --hours give them for runs whose
+logs predate the timestamps (the sacct database was unreachable on 2026-10-14).
 """
 import argparse
-from datetime import date
+import re
 from pathlib import Path
 
 import numpy as np
@@ -13,8 +15,19 @@ from openpyxl import Workbook, load_workbook
 from PIL import Image
 
 RESULTS = Path(__file__).resolve().parents[2] / "docs" / "results.xlsx"
-COLUMNS = ["date", "model", "repo@commit", "train centres", "val centre", "seed", "epochs",
-           "Dice", "IoU", "notes", "output path"]
+RUN_COLUMNS = ["run_id", "date", "member", "model", "paper (venue, year)", "repo@commit", "backbone",
+               "pretrained weights", "input size", "augmentation", "loss", "optimizer", "learning rate",
+               "batch size", "epochs", "checkpoint rule", "train centres", "n_train frames", "val centre",
+               "n_val frames", "seed", "GPU type", "train time (h)", "Dice", "IoU",
+               "empty-prediction frames on val", "notes", "output path"]
+NOTE_COLUMNS = ["date", "author", "note"]
+# Run columns copied straight from the config, and the config key each one comes from.
+CONFIG_KEYS = {"run_id": "name", "member": "member", "model": "model", "paper (venue, year)": "paper",
+               "backbone": "backbone", "pretrained weights": "pretrained_weights", "input size": "input_size",
+               "augmentation": "augmentation", "loss": "loss", "optimizer": "optimizer",
+               "learning rate": "learning_rate", "batch size": "batch_size", "epochs": "epochs",
+               "checkpoint rule": "checkpoint_rule", "train centres": "train_centres",
+               "val centre": "val_centre", "seed": "seed", "notes": "notes", "output path": "run_dir"}
 
 
 def binary_mask(path):
@@ -30,44 +43,85 @@ def dice_iou(pred, gt):
 
 
 def evaluate(pred_dir, gt_dir, final=False):
-    """Mean (Dice, IoU) over every mask in gt_dir; the prediction for <frame> is pred_dir/<frame>.png."""
+    """Mean Dice, mean IoU and the number of empty predictions over every mask in gt_dir.
+
+    The prediction for <frame> is pred_dir/<frame>.png.
+    """
     gt_paths = sorted(Path(gt_dir).iterdir())
     if not final and any("data_C6" in str(p.resolve()) for p in gt_paths):
         raise SystemExit("C6 is the held-out test centre: evaluate on it only with --final")
-    scores = []
+    scores, empty = [], 0
     for gt_path in gt_paths:
         pred, gt = binary_mask(Path(pred_dir) / f"{gt_path.stem}.png"), binary_mask(gt_path)
         if pred.shape != gt.shape:
             raise ValueError(f"{gt_path.stem}: prediction {pred.shape} but mask {gt.shape}")
         scores.append(dice_iou(pred, gt))
+        empty += int(not pred.any())
     dice, iou = np.mean(scores, axis=0)
-    return float(dice), float(iou)
+    return float(dice), float(iou), empty
 
 
-def add_result_row(row, path=RESULTS):
-    """Append one run to the results sheet, creating the sheet with its header if needed."""
-    if path.exists():
-        book = load_workbook(path)
-    else:
-        book = Workbook()
-        book.active.append(COLUMNS)
-    book.active.append(row)
+def open_results(path):
+    """Load the results workbook, or create it with its 'runs' and 'notes' sheets."""
+    if Path(path).exists():
+        return load_workbook(path)
+    book = Workbook()
+    book.active.title = "runs"
+    book.active.append(RUN_COLUMNS)
+    book.create_sheet("notes").append(NOTE_COLUMNS)
+    return book
+
+
+def add_run(row, path=RESULTS):
+    """Append one run to the 'runs' sheet; row is a dict with a value for every column."""
+    book = open_results(path)
+    book["runs"].append([row[column] for column in RUN_COLUMNS])
     book.save(path)
+
+
+def add_note(date, author, note, path=RESULTS):
+    book = open_results(path)
+    book["notes"].append([date, author, note])
+    book.save(path)
+
+
+def log_facts(logs):
+    """GPU type, start date and summed Slurm run time (h) from the job logs; None where a log lacks it."""
+    gpu, date, hours = None, None, 0.0
+    for text in (Path(log).read_text() for log in logs):
+        found = re.search(r"^(NVIDIA [^,]+),", text, re.M)  # the nvidia-smi line
+        gpu = gpu or (found and found[1])
+        start, runtime = re.search(r"StartTime=(\S+)", text), re.search(r"RunTime=(\S+)", text)
+        if not (start and runtime):
+            return gpu, None, None
+        date = date or start[1][:10]
+        days, _, clock = runtime[1].rpartition("-")
+        h, m, s = map(int, clock.split(":"))
+        hours += int(days or 0) * 24 + h + m / 60 + s / 3600
+    return gpu, date, round(hours, 2)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config")
     parser.add_argument("--final", action="store_true", help="allow the held-out C6 centre")
-    parser.add_argument("--save", action="store_true", help="append the row to docs/results.xlsx")
+    parser.add_argument("--save", action="store_true", help="add the run to docs/results.xlsx")
+    parser.add_argument("--logs", nargs="+", default=[], help="Slurm logs of the run's jobs")
+    parser.add_argument("--date", help="run date, when the logs do not have it")
+    parser.add_argument("--hours", type=float, help="Slurm run time in hours, when the logs do not have it")
     args = parser.parse_args()
     cfg = yaml.safe_load(open(args.config))
-    dice, iou = evaluate(cfg["pred_dir"], Path(cfg["val_dir"]) / "masks", args.final)
-    print(f"{cfg['name']}: Dice {dice:.4f}  IoU {iou:.4f}  ({cfg['pred_dir']})")
+    dice, iou, empty = evaluate(cfg["pred_dir"], Path(cfg["val_dir"]) / "masks", args.final)
+    print(f"{cfg['name']}: Dice {dice:.4f}  IoU {iou:.4f}  empty {empty}  ({cfg['pred_dir']})")
     if args.save:
-        add_result_row([date.today().isoformat(), cfg["model"], f"{cfg['repo_url']}@{cfg['commit']}",
-                        cfg["train_centres"], cfg["val_centre"], cfg["seed"], cfg["epochs"],
-                        round(dice, 4), round(iou, 4), cfg["notes"], cfg["run_dir"]])
+        gpu, date, hours = log_facts(args.logs)
+        row = {column: cfg[key] for column, key in CONFIG_KEYS.items()}
+        row.update({"date": args.date or date or "unknown", "repo@commit": f"{cfg['repo_url']}@{cfg['commit']}",
+                    "n_train frames": len(list(Path(cfg["train_dir"], "images").iterdir())),
+                    "n_val frames": len(list(Path(cfg["val_dir"], "images").iterdir())),
+                    "GPU type": gpu or "unknown", "train time (h)": args.hours or hours or "unknown",
+                    "Dice": round(dice, 4), "IoU": round(iou, 4), "empty-prediction frames on val": empty})
+        add_run(row)
 
 
 if __name__ == "__main__":

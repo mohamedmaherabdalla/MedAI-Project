@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
+from openpyxl import load_workbook
 from PIL import Image
 
-from medai.evaluate import evaluate
+from medai.evaluate import RUN_COLUMNS, add_note, add_run, evaluate
 
 
 def save(folder, name, pixels):
@@ -18,13 +19,17 @@ def make_example(gt_dir, pred_dir):
     # Frame b: prediction equals the mask -> Dice 1, IoU 1.
     save(gt_dir, "b", [[0, 255], [0, 0]])
     save(pred_dir, "b", [[0, 255], [0, 0]])
+    # Frame c: polyp missed entirely -> Dice 0, IoU 0, one empty prediction.
+    save(gt_dir, "c", [[255, 0], [0, 0]])
+    save(pred_dir, "c", [[127, 0], [0, 0]])
 
 
 def test_mean_dice_and_iou_on_a_known_example(tmp_path):
     make_example(tmp_path / "gt", tmp_path / "pred")
-    dice, iou = evaluate(tmp_path / "pred", tmp_path / "gt")
-    assert dice == pytest.approx((0.5 + 1) / 2)
-    assert iou == pytest.approx((2 / 6 + 1) / 2)
+    dice, iou, empty = evaluate(tmp_path / "pred", tmp_path / "gt")
+    assert dice == pytest.approx((0.5 + 1 + 0) / 3)
+    assert iou == pytest.approx((2 / 6 + 1 + 0) / 3)
+    assert empty == 1
 
 
 def test_refuses_c6_without_final(tmp_path):
@@ -32,4 +37,15 @@ def test_refuses_c6_without_final(tmp_path):
     make_example(gt_dir, pred_dir)
     with pytest.raises(SystemExit):
         evaluate(pred_dir, gt_dir)
-    assert evaluate(pred_dir, gt_dir, final=True)[0] == pytest.approx(0.75)
+    assert evaluate(pred_dir, gt_dir, final=True)[0] == pytest.approx(0.5)
+
+
+def test_results_sheet_has_runs_and_notes(tmp_path):
+    path = tmp_path / "results.xlsx"
+    add_run({column: column for column in RUN_COLUMNS}, path)
+    add_note("2026-10-14", "someone", "a note", path)
+    book = load_workbook(path)
+    assert [c.value for c in book["runs"][2]] == RUN_COLUMNS
+    assert [c.value for c in book["notes"][2]] == ["2026-10-14", "someone", "a note"]
+    with pytest.raises(KeyError):
+        add_run({"run_id": "incomplete"}, path)
