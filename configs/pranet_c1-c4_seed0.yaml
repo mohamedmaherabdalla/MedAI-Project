@@ -1,0 +1,18 @@
+# PraNet baseline: the repo's MyTrain.py with all its defaults (Adam, lr 1e-4, batch 16, 352 px,
+# multi-scale 0.75/1/1.25, gradient clip 0.5; --epoch 20 runs epochs 1-19). Last snapshot is scored.
+name: pranet_c1-c4_seed0
+model: PraNet
+repo: /l/users/mohamed.abdalla/medai/baselines/PraNet
+repo_url: https://github.com/DengPingFan/PraNet
+commit: 95f12bd4e32ec954b5069654abae7de9473fd1f5
+seed: 0
+epochs: 19
+args: {}  # no overrides
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/pranet_c1-c4_seed0
+checkpoint: snapshots/PraNet_Res2Net/PraNet-19.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/pranet_c1-c4_seed0/pred_c5
+notes: "MyTrain.py defaults, 19 epochs, last snapshot; Res2Net-50 v1b ImageNet backbone; C5 maps as in MyTest.py (lateral map 2, min-max per image)"

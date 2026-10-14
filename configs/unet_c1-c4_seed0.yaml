@@ -1,0 +1,21 @@
+# U-Net baseline: segmentation_models_pytorch Unet, ResNet-34 ImageNet encoder, Dice + BCE loss,
+# Adam lr 1e-4, batch 16, 352 px, no augmentation, 100 epochs. Last epoch is scored.
+name: unet_c1-c4_seed0
+model: U-Net
+repo_url: segmentation_models_pytorch (pip)
+commit: 0.5.0
+seed: 0
+epochs: 100
+args:
+  epochs: 100
+  size: 352
+  batchsize: 16
+  lr: 1.0e-4
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/unet_c1-c4_seed0
+checkpoint: unet.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/unet_c1-c4_seed0/pred_c5
+notes: "smp Unet ResNet-34 ImageNet, Dice+BCE, Adam 1e-4, batch 16, 352 px, no augmentation, last epoch; C5 maps = sigmoid (no min-max)"
