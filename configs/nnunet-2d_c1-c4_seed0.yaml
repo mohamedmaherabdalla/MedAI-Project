@@ -23,11 +23,11 @@ member: Mohamed Abdalla
 paper: Nature Methods 2021
 backbone: none (U-Net from nnU-Net plans, trained from scratch)
 pretrained_weights: none
-input_size: PLANS
+input_size: 1024x1536 patches (nnUNetPlans.json; median image 1080x1440, no resampling)
 augmentation: nnU-Net default (rotation, scaling, noise, blur, brightness, contrast, low resolution, gamma, mirroring)
 loss: Dice + cross-entropy, deep supervision
 optimizer: SGD Nesterov momentum 0.99, weight decay 3e-5, poly learning-rate decay
 learning_rate: 1.0e-2
-batch_size: PLANS
+batch_size: 2  # nnUNetPlans.json
 checkpoint_rule: final epoch (checkpoint_final.pth)
 notes: "nnU-Net v2.8.1 defaults, 2d, fold all, 1000 epochs x 250 iterations; nnUNetv2_predict defaults (mirroring TTA); labels 0/1 saved as 0/255"
