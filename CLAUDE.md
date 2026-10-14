@@ -7,6 +7,7 @@ The proposal in `docs/proposal/proposal.tex` is final. Do not change the researc
 - Few files. Before you add a file, check whether an existing file is the right place.
 - No new top-level folders. The layout is fixed:
   `src/medai/` (code), `configs/` (one YAML per experiment), `scripts/` (Slurm and shell wrappers), `tests/` (pytest), `docs/` (proposal, reports, logs).
+- This is a research repo: README holds only the question, the data, how to run, and where results are. No course timetables, status tables, to-do lists or progress notes in any file.
 - No notebooks, no scratch files, no copies of files ("_v2", "_old", "_final") in the repo. Delete dead code; git keeps the history.
 - Data, checkpoints, predictions and logs live OUTSIDE the repo, in `/l/users/mohamed.abdalla/medai/` (see `.gitignore`).
 
