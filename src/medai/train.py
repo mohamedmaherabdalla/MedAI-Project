@@ -91,6 +91,76 @@ def train_polyp_pvt(cfg):
             path.unlink()
 
 
+def emcad_net_args(a):
+    """EMCADNet arguments, derived from the train_polyp.py options as its __main__ block does."""
+    return dict(num_classes=1, kernel_sizes=a["kernel_sizes"], expansion_factor=a["expansion_factor"],
+                dw_parallel=not a["no_dw_parallel"], add=not a["concatenation"], lgag_ks=a["lgag_ks"],
+                activation=a["activation_mscb"], encoder=a["encoder"])
+
+
+def train_emcad(cfg):
+    """Run the training loop of the repo's train_polyp.py once, with its default settings.
+
+    train_polyp.py trains five runs in a row and keeps the epoch with the best Dice on its own val folder.
+    We train one run (seed 0); C5 is our only held-out centre, so the per-epoch test is switched off and
+    the last epoch is kept, as for Polyp-PVT.
+    """
+    import_repo(cfg)
+    import train_polyp as T  # the repo's train_polyp.py; importing it does not start training
+    T.test = lambda model, path, dataset, opt: (0.0, 0.0, 0)
+    opt = argparse.Namespace(**cfg["args"], train_path=cfg["train_dir"], test_path=None,
+                             train_save=f"{cfg['run_dir']}/model_pth/")
+    T.dict_plot, T.best, T.test_dice_at_best_val, T.total_train_time = {"val": [], "test": []}, 0.0, 0.0, 0
+    # From here on, the same steps as one run of the __main__ block of train_polyp.py.
+    model = T.EMCADNet(**emcad_net_args(cfg["args"]), pretrain=True, pretrained_dir=opt.pretrained_dir).cuda()
+    optimizer = torch.optim.AdamW(model.parameters(), opt.lr, weight_decay=1e-4)
+    scheduler = T.CosineAnnealingLR(optimizer, T_max=opt.epoch, eta_min=1e-6)
+    loader = T.get_loader(image_root=f"{opt.train_path}/images/", gt_root=f"{opt.train_path}/masks/",
+                          batchsize=opt.batchsize, trainsize=opt.img_size, shuffle=True,
+                          augmentation=opt.augmentation, split="train", color_image=opt.color_image)
+    for epoch in range(1, opt.epoch + 1):
+        T.adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
+        T.train(loader, model, optimizer, epoch, opt, "EMCAD")
+        scheduler.step()
+
+
+def train_sam2_unet(cfg):
+    """Run the repo's train.py unchanged (its own seed call is commented out; main() sets ours)."""
+    import_repo(cfg)
+    train = cfg["train_dir"]
+    sys.argv = ["train.py", f"--hiera_path={cfg['weights']}", f"--train_image_path={train}/images/",
+                f"--train_mask_path={train}/masks/", f"--save_path={cfg['run_dir']}/snapshots"]
+    sys.argv += [f"--{k}={v}" for k, v in cfg["args"].items()]
+    runpy.run_path(f"{cfg['repo']}/train.py", run_name="__main__")
+
+
+def set_nnunet_env(cfg):
+    """Point nnU-Net at its folders. Must run before nnunetv2 is imported: it reads them at import."""
+    os.environ.update(nnUNet_raw=cfg["nnunet_raw"], nnUNet_preprocessed=cfg["nnunet_preprocessed"],
+                      nnUNet_results=f"{cfg['run_dir']}/nnUNet_results",
+                      nnUNet_n_proc_DA=str(cfg["loader_processes"]))  # one loader process per allocated CPU
+    return Path(sys.executable).parent  # the nnUNetv2_* commands live next to the venv python
+
+
+def train_nnunet(cfg):
+    """Plan, preprocess and train nnU-Net v2 (default plans and trainer, 2d, fold 'all').
+
+    Running this again continues from the latest checkpoint, so a job that hits its time limit is
+    simply resubmitted.
+    """
+    import_repo(cfg)  # the venv has nnunetv2 installed from this clone (pip install -e)
+    bin_dir = set_nnunet_env(cfg)
+    from nnunetv2.run.run_training import run_training
+    dataset = str(cfg["dataset_id"])
+    if not Path(cfg["nnunet_preprocessed"], cfg["dataset_name"], "nnUNetPlans_2d").exists():
+        subprocess.run([bin_dir / "nnUNetv2_plan_and_preprocess", "-d", dataset, "-c", "2d",
+                        "-np", str(cfg["loader_processes"]), "--verify_dataset_integrity"], check=True)
+    fold_dir = Path(cfg["run_dir"], cfg["checkpoint"]).parent
+    if (fold_dir / "checkpoint_final.pth").exists():
+        return
+    run_training(dataset, "2d", "all", continue_training=(fold_dir / "checkpoint_latest.pth").exists())
+
+
 class Frames(Dataset):
     """Image and binary mask pairs of a split folder, resized to size x size."""
 
@@ -132,7 +202,8 @@ def train_unet(cfg):
     torch.save(model.state_dict(), checkpoint)
 
 
-TRAIN = {"U-Net": train_unet, "PraNet": train_pranet, "Polyp-PVT": train_polyp_pvt}
+TRAIN = {"U-Net": train_unet, "PraNet": train_pranet, "Polyp-PVT": train_polyp_pvt,
+         "EMCAD": train_emcad, "SAM2-UNet": train_sam2_unet, "nnU-Net": train_nnunet}
 
 
 def main():
