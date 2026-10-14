@@ -14,12 +14,3 @@ Polyp segmentation models lose accuracy at new hospitals. We measure how much of
 | `docs/` | Proposal, course reports, experiment log, AI-use log |
 
 Data and outputs are not in the repository. They live in `/l/users/mohamed.abdalla/medai/`.
-
-## Status
-| Week | Deliverable | State |
-|---|---|---|
-| 4 | One-page proposal | done |
-| 6 | Pilot: does clipping cost Dice on the validation centre? | to do |
-| 8 | Literature, dataset and baseline report (3 pages) | to do |
-| 11 | Progress, results and error analysis (5 pages) | to do |
-| 14-15 | Final report, demo, viva, repository | to do |
