@@ -18,7 +18,7 @@ The proposal in `docs/proposal/proposal.tex` is final. Do not change the researc
 - Comments explain WHY, not what.
 
 ## Engineering practice
-- Commit every working day: small commits, one change each, message in the imperative ("Add centre split loader").
+- Commit every working day: small commits, one change each, message in the imperative ("Add centre split loader"). Commits are authored by team members only: no AI co-author lines. AI use goes in docs/AI_USE_LOG.md instead.
 - Run `pytest -q` before every commit. Tests cover the data split, the metrics and the clipping detector.
 - Never commit data, weights, API keys or patient images. Images in the reports are ours or are from the public datasets, with credit.
 - Add a line to `docs/EXPERIMENT_LOG.md` for every run: date, config, git commit, main number, output path.
