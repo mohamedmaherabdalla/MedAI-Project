@@ -16,3 +16,14 @@ run_dir: /l/users/mohamed.abdalla/medai/outputs/pranet_c1-c4_seed0
 checkpoint: snapshots/PraNet_Res2Net/PraNet-19.pth
 pred_dir: /l/users/mohamed.abdalla/medai/outputs/pranet_c1-c4_seed0/pred_c5
 notes: "MyTrain.py defaults, 19 epochs, last snapshot; Res2Net-50 v1b ImageNet backbone; C5 maps as in MyTest.py (lateral map 2, min-max per image)"
+member: Mohamed Abdalla
+paper: MICCAI 2020
+backbone: Res2Net-50 v1b 26w 4s
+pretrained_weights: ImageNet Res2Net-50 v1b (res2net50_v1b_26w_4s-3cf99910.pth, official Res2Net URL)
+input_size: 352x352, multi-scale training 0.75/1/1.25
+augmentation: none (multi-scale resizing only)
+loss: structure loss (weighted BCE + weighted IoU) on 4 maps
+optimizer: Adam, gradient clip 0.5
+learning_rate: 1.0e-4
+batch_size: 16
+checkpoint_rule: last epoch (PraNet-19.pth)

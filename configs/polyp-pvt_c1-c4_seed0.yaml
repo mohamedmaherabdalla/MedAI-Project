@@ -26,3 +26,14 @@ run_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt_c1-c4_seed0
 checkpoint: model_pth/99PolypPVT.pth
 pred_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt_c1-c4_seed0/pred_c5
 notes: "Train.py defaults, 99 epochs, last epoch (per-epoch public test-set selection off); PVTv2-B2 ImageNet backbone; C5 maps as in Test.py (P1+P2, min-max per image)"
+member: Mohamed Abdalla
+paper: CAAI Artificial Intelligence Research 2023
+backbone: PVTv2-B2
+pretrained_weights: ImageNet PVTv2-B2 (pvt_v2_b2.pth from the Polyp-PVT Google Drive; same bytes as the PVT GitHub release)
+input_size: 352x352, multi-scale training 0.75/1/1.25
+augmentation: none (Train.py default --augmentation False; multi-scale resizing only)
+loss: structure loss (weighted BCE + weighted IoU) on 2 maps
+optimizer: AdamW, weight decay 1e-4, gradient clip 0.5
+learning_rate: 1.0e-4
+batch_size: 16
+checkpoint_rule: last epoch (99PolypPVT.pth); per-epoch public test-set selection off
