@@ -16,5 +16,9 @@ export PYTHONPATH=$REPO/src TORCH_HOME=$MEDAI/cache/torch HF_HOME=$MEDAI/cache/h
 export HF_HUB_OFFLINE=1 PYTHONUNBUFFERED=1
 echo "job $SLURM_JOB_ID on $(hostname), config $CONFIG, code $(git -C "$REPO" rev-parse HEAD)"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv
+# Timestamps and Slurm times in the log give the train time when sacct is unavailable.
+echo "train start $(date -Is)"
 "$MEDAI/venv/bin/python" -m medai.train "$CONFIG"
+echo "train end $(date -Is)"
 "$MEDAI/venv/bin/python" -m medai.predict "$CONFIG"
+scontrol show job "$SLURM_JOB_ID" | grep -o -E "(StartTime|RunTime)=[^ ]+"
