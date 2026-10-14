@@ -1,0 +1,50 @@
+# EMCAD baseline: one run of the training loop of the repo's train_polyp.py with its defaults
+# (PVTv2-B2 encoder, AdamW lr 5e-4 with cosine decay, batch 8, 352 px, multi-scale, flips and
+# rotation, 200 epochs). Its per-epoch selection on a val folder is off; the last epoch is scored.
+name: emcad_c1-c4_seed0
+model: EMCAD
+repo: /l/users/mohamed.abdalla/medai/baselines/EMCAD
+repo_url: https://github.com/SLDGroup/EMCAD
+commit: 26c9c31f731f749b62c5fe83f44376dac75f3aa8
+seed: 0
+epochs: 200
+args:  # train_polyp.py argparse defaults; only pretrained_dir points at our copy of the weights
+  encoder: pvt_v2_b2
+  expansion_factor: 2
+  kernel_sizes: [1, 3, 5]
+  lgag_ks: 3
+  activation_mscb: relu6
+  no_dw_parallel: false
+  concatenation: false
+  no_pretrain: false
+  pretrained_dir: /l/users/mohamed.abdalla/medai/baselines/weights
+  supervision: mutation
+  epoch: 200
+  lr: 5.0e-4
+  batchsize: 8
+  test_batchsize: 8
+  img_size: 352
+  clip: 0.5
+  decay_rate: 0.1
+  decay_epoch: 300
+  color_image: true
+  augmentation: true
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/emcad_c1-c4_seed0
+checkpoint: model_pth/EMCAD-last.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/emcad_c1-c4_seed0/pred_c5
+member: Mohamed Abdalla
+paper: CVPR 2024
+backbone: PVTv2-B2
+pretrained_weights: ImageNet PVTv2-B2 (PVT GitHub release v2, pvt_v2_b2.pth)
+input_size: 352x352, multi-scale training 0.75/1/1.25
+augmentation: rotate up to 90 deg, vertical and horizontal flip (albumentations)
+loss: structure loss (weighted BCE + weighted IoU) on 4 maps and their sum
+optimizer: AdamW, weight decay 1e-4, cosine decay to 1e-6, gradient clip 0.5
+learning_rate: 5.0e-4
+batch_size: 8
+checkpoint_rule: last epoch (EMCAD-last.pth); per-epoch val selection off
+notes: "train_polyp.py defaults, one run of the five its loop trains; C5 inputs from its own OpenCV loader; C5 maps = last output, min-max per image as in test_polyp.py, resized to the true mask size (test_polyp.py swaps height and width)"
