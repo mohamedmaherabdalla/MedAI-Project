@@ -30,3 +30,11 @@ The proposal in `docs/proposal/proposal.tex` is final. Do not change the researc
 - Controls add one ingredient at a time, at matched size and compute.
 - Confidence intervals: bootstrap over video sequences; three seeds for final comparisons.
 - Never invent a number. If something fails, report it.
+
+## Current stage: BASELINES ONLY (decided 2026-10-14)
+- Only train existing baselines from their official GitHub code. Nothing else from the papers (no gate, no clipping study, no new method).
+- Baselines: U-Net (ResNet-34 encoder, segmentation_models_pytorch), PraNet (github.com/DengPingFan/PraNet), Polyp-PVT (github.com/DengPingFan/Polyp-PVT). Use each repo's default settings.
+- External repos are cloned OUTSIDE this repo, in `/l/users/mohamed.abdalla/medai/baselines/<name>`, at a recorded commit. We only add small adapter scripts here.
+- Split for this stage: train = PolypGen single frames C1-C4; validation = single frames C5; C6 is not touched; sequences 1-15 are not used (their centre is unknown).
+- Every model is scored by OUR one evaluation script (Dice and IoU per frame, mean over C5), so the numbers are comparable.
+- ALL results go into one sheet: `docs/results.xlsx` (one row per run: date, model, repo@commit, train centres, val centre, seed, epochs, Dice, IoU, notes, output path).
