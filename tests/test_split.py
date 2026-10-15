@@ -18,7 +18,7 @@ def test_train_split_has_no_c5_or_c6_frame(tmp_path):
     assert len(images) == len(masks) == 256 + 301 + 457 + 227
 
     # Every link points into C1-C4, never into C5 or C6.
-    centres = {p.resolve().relative_to(DATA_ROOT).parts[0] for p in images + masks}
+    centres = {p.resolve().relative_to(DATA_ROOT.resolve()).parts[0] for p in images + masks}
     assert centres == {"data_C1", "data_C2", "data_C3", "data_C4"}
 
     # No training image has the same bytes as a C5 or C6 image (catches copies across centres).
