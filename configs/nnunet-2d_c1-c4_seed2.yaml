@@ -1,0 +1,33 @@
+# nnU-Net v2 baseline: default plans (nnUNetPlans) and trainer (nnUNetTrainer), 2d configuration,
+# fold "all" (trains on all of C1-C4), 1000 epochs; nnUNetv2_predict with its defaults on C5.
+name: nnunet-2d_c1-c4_seed2
+model: nnU-Net
+repo: /l/users/mohamed.abdalla/medai/baselines/nnUNet
+repo_url: https://github.com/MIC-DKFZ/nnUNet
+commit: 468cf803df9b267150ae2b6c0c59b8ac84f16227  # release v2.8.1
+seed: 2
+epochs: 1000
+dataset_id: 501
+dataset_name: Dataset501_PolypGenC1C4
+nnunet_raw: /l/users/mohamed.abdalla/medai/data/nnunet_raw
+nnunet_preprocessed: /l/users/mohamed.abdalla/medai/data/nnunet_preprocessed
+loader_processes: 8
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/nnunet-2d_c1-c4_seed2
+checkpoint: nnUNet_results/Dataset501_PolypGenC1C4/nnUNetTrainer__nnUNetPlans__2d/fold_all/checkpoint_final.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/nnunet-2d_c1-c4_seed2/pred_c5
+member: Mohamed Abdalla
+paper: Nature Methods 2021
+backbone: none (U-Net from nnU-Net plans, trained from scratch)
+pretrained_weights: none
+input_size: 1024x1536 patches (nnUNetPlans.json; median image 1080x1440, no resampling)
+augmentation: nnU-Net default (rotation, scaling, noise, blur, brightness, contrast, low resolution, gamma, mirroring)
+loss: Dice + cross-entropy, deep supervision
+optimizer: SGD Nesterov momentum 0.99, weight decay 3e-5, poly learning-rate decay
+learning_rate: 1.0e-2
+batch_size: 2  # nnUNetPlans.json
+checkpoint_rule: final epoch (checkpoint_final.pth)
+notes: "nnU-Net v2.8.1 defaults, 2d, fold all, 1000 epochs x 250 iterations; nnUNetv2_predict defaults (mirroring TTA); labels 0/1 saved as 0/255; the seed sets the weight initialisation, nnU-Net's augmentation workers are unseeded (seeds=None in nnUNetTrainer)"

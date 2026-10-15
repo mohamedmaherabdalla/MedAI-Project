@@ -1,0 +1,30 @@
+# SAM2-UNet baseline: the repo's train.py unchanged with its defaults (frozen SAM2 Hiera-L encoder
+# with adapters, AdamW lr 1e-3 with cosine decay, batch 12, 352 px, flips, 20 epochs). Last epoch.
+name: sam2-unet_c1-c4_seed2
+model: SAM2-UNet
+repo: /l/users/mohamed.abdalla/medai/baselines/SAM2-UNet
+repo_url: https://github.com/WZH0120/SAM2-UNet
+commit: 01598e5e9912ffb23f965ecbebf4d1dfecbaa56e
+seed: 2
+epochs: 20
+args: {}  # no overrides: train.py defaults (= train.sh)
+weights: /l/users/mohamed.abdalla/medai/baselines/weights/sam2_hiera_large.pt
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/sam2-unet_c1-c4_seed2
+checkpoint: snapshots/SAM2-UNet-20.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/sam2-unet_c1-c4_seed2/pred_c5
+member: Mohamed Abdalla
+paper: Visual Intelligence 2026 (arXiv 2024)
+backbone: SAM2 Hiera-L, frozen, with adapters
+pretrained_weights: SAM2 sam2_hiera_large.pt (Meta, dl.fbaipublicfiles.com)
+input_size: 352x352
+augmentation: horizontal and vertical flip
+loss: structure loss (weighted BCE + weighted IoU) on 3 maps
+optimizer: AdamW, weight decay 5e-4, cosine decay to 1e-7
+learning_rate: 1.0e-3
+batch_size: 12
+checkpoint_rule: last epoch (SAM2-UNet-20.pth)
+notes: "train.py defaults; C5 maps = first output, min-max per image as in test.py"

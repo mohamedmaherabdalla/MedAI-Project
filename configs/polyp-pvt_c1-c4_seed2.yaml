@@ -1,0 +1,39 @@
+# Polyp-PVT baseline: the training loop of the repo's Train.py with its defaults (AdamW, lr 1e-4,
+# weight decay 1e-4, batch 16, 352 px, multi-scale, clip 0.5, no augmentation; --epoch 100 runs
+# epochs 1-99). Its per-epoch public test-set selection is off; the last epoch is scored.
+name: polyp-pvt_c1-c4_seed2
+model: Polyp-PVT
+repo: /l/users/mohamed.abdalla/medai/baselines/Polyp-PVT
+repo_url: https://github.com/DengPingFan/Polyp-PVT
+commit: cd71fbf9fcd8c32cc0f33699f4e0186073c64dc4
+seed: 2
+epochs: 99
+args:  # Train.py argparse defaults
+  epoch: 100
+  lr: 1.0e-4
+  optimizer: AdamW
+  augmentation: false
+  batchsize: 16
+  trainsize: 352
+  clip: 0.5
+  decay_rate: 0.1
+  decay_epoch: 50
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt_c1-c4_seed2
+checkpoint: model_pth/99PolypPVT.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt_c1-c4_seed2/pred_c5
+notes: "Train.py defaults, 99 epochs, last epoch (per-epoch public test-set selection off); PVTv2-B2 ImageNet backbone; C5 maps as in Test.py (P1+P2, min-max per image)"
+member: Mohamed Abdalla
+paper: CAAI Artificial Intelligence Research 2023
+backbone: PVTv2-B2
+pretrained_weights: ImageNet PVTv2-B2 (pvt_v2_b2.pth from the Polyp-PVT Google Drive; same bytes as the PVT GitHub release)
+input_size: 352x352, multi-scale training 0.75/1/1.25
+augmentation: none (Train.py default --augmentation False; multi-scale resizing only)
+loss: structure loss (weighted BCE + weighted IoU) on 2 maps
+optimizer: AdamW, weight decay 1e-4, gradient clip 0.5
+learning_rate: 1.0e-4
+batch_size: 16
+checkpoint_rule: last epoch (99PolypPVT.pth); per-epoch public test-set selection off
