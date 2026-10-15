@@ -188,8 +188,11 @@ def main():
     parser.add_argument("--logs", nargs="+", default=[], help="Slurm logs of the run's jobs")
     parser.add_argument("--date", help="run date, when the logs do not have it")
     parser.add_argument("--hours", type=float, help="Slurm run time in hours, when the logs do not have it")
+    parser.add_argument("--note", help="text added to the config's notes in the row (for example the machine)")
     args = parser.parse_args()
     cfg = yaml.safe_load(open(args.config))
+    if args.note:
+        cfg["notes"] = "; ".join(filter(None, [cfg["notes"], args.note]))
     dice, iou, empty = evaluate(cfg["pred_dir"], Path(cfg["val_dir"]) / "masks", args.final)
     print(f"{cfg['name']}: Dice {dice:.4f}  IoU {iou:.4f}  empty {empty}  ({cfg['pred_dir']})")
     if args.save:
