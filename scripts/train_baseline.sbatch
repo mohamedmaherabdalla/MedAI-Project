@@ -1,5 +1,6 @@
 #!/bin/bash
-# Train one baseline, then predict the validation centre. One GPU on ws-ia.
+# Train one baseline, predict the validation centre, score it and record the run in docs/results.xlsx
+# and docs/EXPERIMENT_LOG.md, so the results arrive without anyone watching the job. One GPU on ws-ia.
 #   sbatch --job-name=<run> --time=<hh:mm:ss> scripts/train_baseline.sbatch configs/<run>.yaml
 #SBATCH --partition=ws-ia
 #SBATCH --gres=gpu:1
@@ -21,4 +22,6 @@ echo "train start $(date -Is)"
 "$MEDAI/venv/bin/python" -m medai.train "$CONFIG"
 echo "train end $(date -Is)"
 "$MEDAI/venv/bin/python" -m medai.predict "$CONFIG"
+# The train time recorded is the Slurm run time up to here: training plus C5 prediction.
 scontrol show job "$SLURM_JOB_ID" | grep -o -E "(StartTime|RunTime)=[^ ]+"
+"$MEDAI/venv/bin/python" -m medai.evaluate "$CONFIG" --save --logs "$MEDAI/outputs/slurm-$SLURM_JOB_NAME-$SLURM_JOB_ID.log"

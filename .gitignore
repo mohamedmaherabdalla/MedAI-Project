@@ -17,6 +17,8 @@ __pycache__/
 .venv/
 .env
 *.log
+# fcntl lock that guards docs/results.xlsx while a job writes it
+*.lock
 # LaTeX build files
 *.aux
 *.out
