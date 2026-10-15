@@ -6,7 +6,9 @@ The token needs only the "view" and "download" scopes.
 Run:
     /l/users/mohamed.abdalla/medai/venv/bin/python scripts/download_polypgen.py
 """
+import shutil
 import subprocess
+import zipfile
 
 import synapseclient
 
@@ -27,6 +29,10 @@ def main():
 
 
 def unzip(path, target):
+    if shutil.which("unzip") is None:  # Windows has no unzip; zipfile works off Lustre
+        with zipfile.ZipFile(path) as archive:
+            archive.extractall(target, [n for n in archive.namelist() if not n.startswith("__MACOSX/")])
+        return
     subprocess.run(["unzip", "-q", "-o", path, "-x", "__MACOSX/*", "-d", target], check=True)
 
 
