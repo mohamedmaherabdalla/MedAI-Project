@@ -14,3 +14,4 @@
 | 2026-10-15 | Mohamed Abdalla | configs/unet_c1-c4_seed1.yaml | 49f99f4 | U-Net, seed 1, 100 epochs: C5 Dice 0.5219, IoU 0.4457 (Slurm 230515, 0.22 h) | /l/users/mohamed.abdalla/medai/outputs/unet_c1-c4_seed1 |
 | 2026-10-15 | Mohamed Abdalla | configs/unet_c1-c4_seed2.yaml | 49f99f4 | U-Net, seed 2, 100 epochs: C5 Dice 0.5412, IoU 0.4612 (Slurm 230516, 0.22 h) | /l/users/mohamed.abdalla/medai/outputs/unet_c1-c4_seed2 |
 | 2026-10-15 | Mohamed Abdalla | configs/sam2-unet_c1-c4_seed1.yaml | eb71a4e | SAM2-UNet, seed 1, 20 epochs: C5 Dice 0.6679, IoU 0.5952 (Slurm 230602, 0.35 h) | /l/users/mohamed.abdalla/medai/outputs/sam2-unet_c1-c4_seed1 |
+| 2026-10-15 | Mohamed Abdalla | configs/sam2-unet_c1-c4_seed2.yaml | eb71a4e | SAM2-UNet, seed 2, 20 epochs: C5 Dice 0.6496, IoU 0.5776 (Slurm 230603, 0.35 h) | /l/users/mohamed.abdalla/medai/outputs/sam2-unet_c1-c4_seed2 |
