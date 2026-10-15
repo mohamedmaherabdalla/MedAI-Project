@@ -1,0 +1,52 @@
+# Polyp-PVT + BigAug: the plain Polyp-PVT run (Train.py defaults, last epoch scored) trained WITH BigAug's
+# image-quality and appearance transforms (Zhang et al., "Generalizing deep learning for medical image
+# segmentation to unseen domains via deep stacked transformation", IEEE TMI 39(7), 2020; arXiv 1906.03347,
+# Sec. III). Ranges and probability are the paper's, except the two blur widths inside unsharp masking,
+# which the paper does not give: those are ours (MONAI RandGaussianSharpen defaults).
+name: polyp-pvt-bigaug_c1-c4_seed0
+model: Polyp-PVT
+repo: /l/users/mohamed.abdalla/medai/baselines/Polyp-PVT
+repo_url: https://github.com/DengPingFan/Polyp-PVT
+commit: cd71fbf9fcd8c32cc0f33699f4e0186073c64dc4
+seed: 0
+epochs: 99
+args:  # Train.py argparse defaults, as in the plain run
+  epoch: 100
+  lr: 1.0e-4
+  optimizer: AdamW
+  augmentation: false
+  batchsize: 16
+  trainsize: 352
+  clip: 0.5
+  decay_rate: 0.1
+  decay_epoch: 50
+bigaug:  # applied in this order on intensities in [0, 1], after resizing to 352 x 352; clipped to [0, 1] after each (ours)
+  probability: 0.5               # paper: "0.5 probability of each transformation"
+  sharpen_strength: [10, 30]     # paper: unsharp masking strength
+  sharpen_blur_std: [0.5, 1.0]   # ours (not in the paper)
+  sharpen_filter_std: 0.5        # ours (not in the paper)
+  blur_std: [0.25, 1.5]          # paper: Gaussian std, here in pixels at 352 px
+  noise_std: [0.1, 1.0]          # paper: std of the added normal noise
+  brightness_shift: [-0.1, 0.1]  # paper
+  gamma: [0.5, 4.5]              # paper: contrast by gamma correction
+  intensity_scale: [-0.1, 0.1]   # paper: random linear transform, scale (applied as x * (1 + s))
+  intensity_shift: [-0.1, 0.1]   # paper: random linear transform, shift
+train_dir: /l/users/mohamed.abdalla/medai/data/splits/train_c1-c4
+val_dir: /l/users/mohamed.abdalla/medai/data/splits/val_c5
+train_centres: C1-C4
+val_centre: C5
+run_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt-bigaug_c1-c4_seed0
+checkpoint: model_pth/99PolypPVT.pth
+pred_dir: /l/users/mohamed.abdalla/medai/outputs/polyp-pvt-bigaug_c1-c4_seed0/pred_c5
+notes: "Plain Polyp-PVT run plus BigAug image-quality and appearance transforms, each with p 0.5, ranges from the paper; the unsharp-masking blur widths (0.5-1.0 and 0.5 px) and the scale formula x*(1+s) and the clip to [0,1] after each transform are ours; the paper's noise std 0.1-1.0 on [0,1] intensities buries some training frames in noise; spatial BigAug transforms not used; no BigAug at test time"
+member: Mohamed Abdalla
+paper: CAAI Artificial Intelligence Research 2023 (Polyp-PVT); IEEE TMI 2020 (BigAug)
+backbone: PVTv2-B2
+pretrained_weights: ImageNet PVTv2-B2 (pvt_v2_b2.pth from the Polyp-PVT Google Drive; same bytes as the PVT GitHub release)
+input_size: 352x352, multi-scale training 0.75/1/1.25
+augmentation: "BigAug image quality (sharpen: unsharp masking strength 10-30; Gaussian blur std 0.25-1.5 px; Gaussian noise std 0.1-1.0) and appearance (brightness shift +-0.1; gamma 0.5-4.5; intensity scale and shift +-0.1), each p 0.5; multi-scale resizing"
+loss: structure loss (weighted BCE + weighted IoU) on 2 maps
+optimizer: AdamW, weight decay 1e-4, gradient clip 0.5
+learning_rate: 1.0e-4
+batch_size: 16
+checkpoint_rule: last epoch (99PolypPVT.pth); per-epoch public test-set selection off

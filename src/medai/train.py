@@ -19,6 +19,7 @@ import torch
 import torchvision.transforms.functional as TF
 import yaml
 from PIL import Image
+from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader, Dataset
 
 PVT_WEIGHTS = "/l/users/mohamed.abdalla/medai/baselines/weights/pvt_v2_b2.pth"
@@ -62,16 +63,61 @@ def train_pranet(cfg):
     runpy.run_path(f"{cfg['repo']}/MyTrain.py", run_name="__main__")
 
 
+def bigaug(image, p):
+    """BigAug image-quality then appearance transforms (Zhang et al., IEEE TMI 2020) on one RGB image.
+
+    Each transform runs with probability p["probability"], in the paper's order, on intensities in [0, 1]
+    (the paper's range); p holds the ranges from the config. The paper's spatial transforms are not used.
+    """
+    blur = lambda x, std: gaussian_filter(x, sigma=(std, std, 0))  # within each colour channel
+    u = lambda key: np.random.uniform(*p[key])
+
+    def sharpen(x):  # unsharp masking
+        blurred = blur(x, u("sharpen_blur_std"))
+        return blurred + u("sharpen_strength") * (blurred - blur(blurred, p["sharpen_filter_std"]))
+
+    steps = [sharpen,
+             lambda x: blur(x, u("blur_std")),
+             lambda x: x + np.random.normal(0, u("noise_std"), x.shape),
+             lambda x: x + u("brightness_shift"),
+             lambda x: x ** u("gamma"),  # contrast
+             lambda x: x * (1 + u("intensity_scale")) + u("intensity_shift")]  # intensity perturbation
+    x = np.asarray(image, dtype=np.float32) / 255
+    for step in steps:
+        if np.random.rand() < p["probability"]:
+            # A transform must not leave the [0, 1] range: gamma is undefined below 0 and a frame
+            # cannot be brighter than white.
+            x = np.clip(step(x), 0, 1)
+    return Image.fromarray((x * 255).round().astype(np.uint8))
+
+
+def add_bigaug_to_polyp_pvt_loader(p):
+    """Make the repo's training dataset apply bigaug to every image it loads."""
+    import utils.dataloader as loader  # the module whose PolypDataset Train.get_loader builds
+    load_rgb = loader.PolypDataset.rgb_loader
+
+    def rgb_loader(dataset, path):
+        # The repo's own resize, done first so that blur and noise act at the 352 px training size;
+        # its Resize transform then leaves the image unchanged.
+        size = (dataset.trainsize, dataset.trainsize)
+        return bigaug(load_rgb(dataset, path).resize(size, Image.BILINEAR), p)
+
+    loader.PolypDataset.rgb_loader = rgb_loader
+
+
 def train_polyp_pvt(cfg):
     """Run the training loop of the repo's Train.py with its default settings on our train folder.
 
     Train.py scores five public test sets after every epoch and keeps the epoch that is best on its
     test folder. Those sets are not part of this stage, and picking the epoch on C5 would bias the C5
     score, so that per-epoch test is switched off and the last epoch is kept, as for PraNet and U-Net.
+    A config with a "bigaug" entry also trains with the BigAug transforms.
     """
     import_repo(cfg)
     import Train  # the repo's Train.py; importing it does not start training
     Train.test = lambda model, path, dataset: 0.0
+    if "bigaug" in cfg:
+        add_bigaug_to_polyp_pvt_loader(cfg["bigaug"])
     opt = argparse.Namespace(**cfg["args"], train_path=cfg["train_dir"], test_path=None,
                              train_save=f"{cfg['run_dir']}/model_pth/")
     names = ["CVC-300", "CVC-ClinicDB", "Kvasir", "CVC-ColonDB", "ETIS-LaribPolypDB", "test"]
