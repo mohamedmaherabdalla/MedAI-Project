@@ -53,7 +53,7 @@ def import_repo(cfg):
         link = run_dir / "pretrained_pth" / "pvt_v2_b2.pth"  # where PolypPVT() looks for its backbone
         link.parent.mkdir(exist_ok=True)
         if not link.exists():
-            link.symlink_to(PVT_WEIGHTS)
+            link.symlink_to(Path(PVT_WEIGHTS).resolve())  # Windows needs the drive in the target
 
 
 def train_pranet(cfg):
