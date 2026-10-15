@@ -83,7 +83,11 @@ def test_log_line(tmp_path):
 
 
 def test_results_lock_blocks_a_second_writer(tmp_path):
-    probe = f"import fcntl; fcntl.lockf(open({str(tmp_path / 'results.lock')!r}, 'w'), fcntl.LOCK_EX | fcntl.LOCK_NB)"
+    lock = str(tmp_path / "results.lock")
+    if sys.platform == "win32":
+        probe = f"import msvcrt; f = open({lock!r}, 'w'); msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)"
+    else:
+        probe = f"import fcntl; fcntl.lockf(open({lock!r}, 'w'), fcntl.LOCK_EX | fcntl.LOCK_NB)"
     with results_lock(tmp_path / "results.xlsx"):
         assert subprocess.run([sys.executable, "-c", probe], capture_output=True).returncode != 0
     assert subprocess.run([sys.executable, "-c", probe], capture_output=True).returncode == 0

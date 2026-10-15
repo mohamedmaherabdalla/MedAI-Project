@@ -8,7 +8,6 @@ them for runs whose logs predate the timestamps (the sacct database was unreacha
 When seeds 0, 1 and 2 of a run are all in the sheet, a note with their mean and standard deviation is added.
 """
 import argparse
-import fcntl
 import re
 from contextlib import contextmanager
 from datetime import date
@@ -18,6 +17,12 @@ import numpy as np
 import yaml
 from openpyxl import Workbook, load_workbook
 from PIL import Image
+
+try:
+    import fcntl
+except ImportError:  # Windows (the PC) has no fcntl; msvcrt gives the same exclusive lock there
+    fcntl = None
+    import msvcrt
 
 RESULTS = Path(__file__).resolve().parents[2] / "docs" / "results.xlsx"
 EXPERIMENT_LOG = RESULTS.parent / "EXPERIMENT_LOG.md"
@@ -99,7 +104,15 @@ def results_lock(path=RESULTS):
     (the /l Lustre mount only has node-local locks). The lock is released if the job dies.
     """
     with open(Path(path).with_suffix(".lock"), "w") as lock:
-        fcntl.lockf(lock, fcntl.LOCK_EX)
+        if fcntl:
+            fcntl.lockf(lock, fcntl.LOCK_EX)
+        else:
+            while True:  # LK_LOCK gives up after 10 s, so try again until the other writer is done
+                try:
+                    msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    pass
         yield
 
 
