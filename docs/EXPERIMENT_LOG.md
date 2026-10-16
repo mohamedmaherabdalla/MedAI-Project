@@ -19,3 +19,4 @@
 | 2026-10-15 | Mohamed Abdalla | configs/polyp-pvt_c1-c4_seed2.yaml | 9b5c3d1 | Polyp-PVT, seed 2, 99 epochs: C5 Dice 0.6086, IoU 0.5295 (Slurm 20261015234559, 2.05 h) | /l/users/mohamed.abdalla/medai/outputs/polyp-pvt_c1-c4_seed2 |
 | 2026-10-16 | Mohamed Abdalla | configs/polyp-pvt-bigaug_c1-c4_seed1.yaml | f7853b6 | Polyp-PVT + BigAug, seed 1, 99 epochs: C5 Dice 0.6703, IoU 0.5903 (Slurm 20261016014923, 2.06 h) | /l/users/mohamed.abdalla/medai/outputs/polyp-pvt-bigaug_c1-c4_seed1 |
 | 2026-10-16 | Mohamed Abdalla | configs/polyp-pvt-bigaug_c1-c4_seed2.yaml | 25b80db | Polyp-PVT + BigAug, seed 2, 99 epochs: C5 Dice 0.6478, IoU 0.5728 (Slurm 20261016035300, 2.06 h) | /l/users/mohamed.abdalla/medai/outputs/polyp-pvt-bigaug_c1-c4_seed2 |
+| 2026-10-16 | Mohamed Abdalla | configs/emcad_c1-c4_seed1.yaml | 63e12ee | EMCAD, seed 1, 200 epochs: C5 Dice 0.6737, IoU 0.5880 (Slurm 20261016151839, 5.44 h) | /l/users/mohamed.abdalla/medai/outputs/emcad_c1-c4_seed1 |
